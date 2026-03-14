@@ -8,7 +8,6 @@ export default function ForgotPassword() {
   const [step, setStep] = useState(1); // 1: email, 2: otp, 3: new password, 4: done
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [devOtp, setDevOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,8 +16,7 @@ export default function ForgotPassword() {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const res = await api.post('/auth/forgot-password', { email });
-      if (res.data.otp) setDevOtp(res.data.otp); // dev mode
+      await api.post('/auth/forgot-password', { email });
       setStep(2);
       toast.success('OTP sent!');
     } catch (err) {
@@ -87,7 +85,6 @@ export default function ForgotPassword() {
 
         {step === 2 && (
           <form className="auth-form" onSubmit={verifyOtp}>
-            {devOtp && <div className="alert alert-warning">🔧 Dev mode OTP: <strong>{devOtp}</strong></div>}
             <div className="form-group">
               <label className="form-label">Enter OTP</label>
               <input id="fp-otp" className="form-control" placeholder="6-digit code" value={otp} onChange={e => setOtp(e.target.value)} maxLength={6} required style={{ letterSpacing: '0.3em', fontSize: 20, textAlign: 'center' }} />

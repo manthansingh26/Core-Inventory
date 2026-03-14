@@ -18,7 +18,7 @@ export default function Adjustments() {
     if (statusFilter) params.status = statusFilter;
     api.get('/adjustments', { params }).then(r => {
       setData(r.data.data);
-      setTotal(r.data.data.length);
+      setTotal(r.data.total);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [search, statusFilter]);

@@ -1,0 +1,290 @@
+/* Print Styles */
+.print-receipt {
+  display: none !important;
+}
+
+@media print {
+  /* Hide everything except print content */
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-receipt,
+  .print-receipt * {
+    visibility: visible;
+  }
+  
+  .print-receipt {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20mm;
+    background: white;
+    color: black;
+    font-family: 'Arial', sans-serif;
+  }
+
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  /* Header */
+  .print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 3px solid #000;
+  }
+
+  .print-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .print-logo-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+  }
+
+  .print-company-name {
+    font-size: 24px;
+    font-weight: 800;
+    color: #000;
+  }
+
+  .print-company-tagline {
+    font-size: 11px;
+    color: #666;
+  }
+
+  .print-document-info {
+    text-align: right;
+  }
+
+  .print-document-type {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+  }
+
+  .print-reference {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: #000;
+  }
+
+  .print-status {
+    font-size: 12px;
+    color: #666;
+  }
+
+  .print-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 11px;
+  }
+
+  .print-badge-draft {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  .print-badge-waiting {
+    background: #fef3c7;
+    color: #d97706;
+  }
+
+  .print-badge-ready {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  .print-badge-done {
+    background: #d1fae5;
+    color: #059669;
+  }
+
+  .print-badge-cancelled {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  /* Company Details */
+  .print-company-details {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9fafb;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .print-document-dates {
+    text-align: right;
+  }
+
+  /* Info Grid */
+  .print-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .print-info-box {
+    border: 1px solid #e5e7eb;
+    padding: 12px;
+    border-radius: 6px;
+    background: #fafafa;
+  }
+
+  .print-info-label {
+    font-size: 10px;
+    color: #6b7280;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 5px;
+    letter-spacing: 0.5px;
+  }
+
+  .print-info-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #000;
+  }
+
+  /* Notes */
+  .print-notes {
+    margin-bottom: 20px;
+    padding: 12px;
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  /* Table */
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    font-size: 12px;
+  }
+
+  .print-table thead {
+    background: #1f2937;
+    color: white;
+  }
+
+  .print-table th {
+    padding: 10px 8px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .print-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .print-table tbody tr:nth-child(even) {
+    background: #f9fafb;
+  }
+
+  .print-table tbody tr:hover {
+    background: #f3f4f6;
+  }
+
+  .print-table tfoot {
+    background: #f3f4f6;
+    font-weight: 700;
+  }
+
+  .print-table tfoot td {
+    padding: 12px 8px;
+    border-top: 2px solid #000;
+    border-bottom: 2px solid #000;
+  }
+
+  /* Signatures */
+  .print-signatures {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    margin: 40px 0 30px;
+    page-break-inside: avoid;
+  }
+
+  .print-signature-box {
+    text-align: center;
+  }
+
+  .print-signature-line {
+    border-top: 2px solid #000;
+    margin-bottom: 8px;
+    margin-top: 50px;
+  }
+
+  .print-signature-label {
+    font-weight: 700;
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+
+  .print-signature-date {
+    font-size: 10px;
+    color: #666;
+  }
+
+  /* Footer */
+  .print-footer {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 10px;
+    color: #6b7280;
+    margin-top: 20px;
+  }
+
+  /* QR Code */
+  .print-qrcode {
+    text-align: center;
+    margin-top: 30px;
+    padding: 20px;
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    background: #f9fafb;
+    page-break-inside: avoid;
+  }
+
+  /* Remove shadows and transitions for print */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

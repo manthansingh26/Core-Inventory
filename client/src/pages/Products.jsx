@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
-import { Plus, Search, AlertTriangle, Package, X, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Search, AlertTriangle, Package, X, Trash2, Edit2, PackagePlus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import QuickStockUpdate from '../components/QuickStockUpdate';
 
 export default function Products() {
   const [products, setProducts] = useState([]);
@@ -14,6 +15,7 @@ export default function Products() {
   const [showForm, setShowForm] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [showCatForm, setShowCatForm] = useState(false);
+  const [showQuickUpdate, setShowQuickUpdate] = useState(false);
   const [newCat, setNewCat] = useState('');
 
   const [form, setForm] = useState({
@@ -86,6 +88,13 @@ export default function Products() {
           <p>Manage inventory items · {total} total</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <button 
+            className="btn btn-secondary btn-sm" 
+            onClick={() => setShowQuickUpdate(true)}
+            title="Quick update for out-of-stock items"
+          >
+            <PackagePlus size={15} /> Restock
+          </button>
           <button className="btn btn-secondary btn-sm" onClick={() => setShowCatForm(true)}>+ Category</button>
           <button id="new-product-btn" className="btn btn-primary" onClick={() => { 
             setEditProduct(null); 
@@ -276,6 +285,14 @@ export default function Products() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Quick Stock Update */}
+      {showQuickUpdate && (
+        <QuickStockUpdate 
+          onClose={() => setShowQuickUpdate(false)}
+          onUpdated={fetchData}
+        />
       )}
     </div>
   );

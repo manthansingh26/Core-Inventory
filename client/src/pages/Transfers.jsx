@@ -18,7 +18,7 @@ export default function Transfers() {
     if (statusFilter) params.status = statusFilter;
     api.get('/transfers', { params }).then(r => {
       setData(r.data.data);
-      setTotal(r.data.data.length);
+      setTotal(r.data.total);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [search, statusFilter]);

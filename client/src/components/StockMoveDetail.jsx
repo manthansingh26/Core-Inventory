@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { CheckCircle2, XCircle, ArrowLeft, Calendar, MapPin, User, Edit2, Printer, Camera } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowLeft, Calendar, MapPin, User, Edit2, Printer, Camera, QrCode } from 'lucide-react';
 import { format } from 'date-fns';
+import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
+import PrintReceipt from './PrintReceipt';
 
 const STATUS_COLORS = {
   draft: 'badge-draft', waiting: 'badge-waiting', ready: 'badge-ready',
@@ -21,6 +23,7 @@ export default function StockMoveDetail({ id, type }) {
   const [move, setMove] = useState(null);
   const [loading, setLoading] = useState(true);
   const [validating, setValidating] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const navigate = useNavigate();
   const cfg = TYPE_CONFIG[type];
 
@@ -80,8 +83,22 @@ export default function StockMoveDetail({ id, type }) {
   const statuses = ['draft', 'waiting', 'ready', 'done', 'cancelled'];
   const isLocked = move.status === 'done' || move.status === 'cancelled';
 
+  // QR code data
+  const qrData = JSON.stringify({
+    ref: move.reference,
+    type: type,
+    status: move.status,
+    date: move.scheduledDate,
+    warehouse: move.toWarehouse?.name || move.fromWarehouse?.name,
+    totalQty: totalQty,
+    url: `${window.location.origin}/${type}s/${move.id}`
+  });
+
   return (
     <div>
+      {/* Print Component (hidden on screen, visible on print) */}
+      <PrintReceipt move={move} type={type} />
+
       {/* Back */}
       <button className="btn btn-ghost btn-sm mb-4" onClick={() => navigate(-1)} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)' }}>
         <ArrowLeft size={15} /> Back
@@ -95,7 +112,10 @@ export default function StockMoveDetail({ id, type }) {
             <div className="detail-title">{move.reference}</div>
           </div>
           <div className="detail-actions" style={{ flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary btn-sm" onClick={() => window.print()} title="Print Count Sheet">
+            <button className="btn btn-secondary btn-sm" onClick={() => setShowQR(true)} title="Show QR Code">
+              <QrCode size={15} /> QR Code
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => window.print()} title="Print Document">
               <Printer size={15} /> Print
             </button>
             {!isLocked && statuses.map(s => (
@@ -211,6 +231,48 @@ export default function StockMoveDetail({ id, type }) {
           </table>
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {showQR && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowQR(false)}>
+          <div className="modal" style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">
+                <QrCode size={20} /> Scan QR Code
+              </h3>
+              <button className="btn-icon" onClick={() => setShowQR(false)}><XCircle size={18} /></button>
+            </div>
+            <div className="modal-body" style={{ textAlign: 'center', padding: '2rem' }}>
+              <div style={{ 
+                display: 'inline-block', 
+                padding: 20, 
+                background: 'white', 
+                borderRadius: 12,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }}>
+                <QRCodeSVG 
+                  value={qrData}
+                  size={200}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+              <div style={{ marginTop: 20, fontSize: 14, color: 'var(--text-secondary)' }}>
+                <div style={{ fontWeight: 600, marginBottom: 8, color: 'var(--text-primary)' }}>
+                  {move.reference}
+                </div>
+                <div>Scan to view receipt details</div>
+                <div style={{ fontSize: 12, marginTop: 12, color: 'var(--text-muted)' }}>
+                  Contains: Reference, Type, Status, Date, Warehouse, Total Quantity, and URL
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowQR(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -79,22 +79,50 @@ export default function StockMoveForm({ type, onClose, onSaved }) {
       let parsedLines = [];
       let notFound = [];
       
-      rows.forEach((row, idx) => {
-         const parts = row.split(',');
-         const skuRaw = parts[0]?.trim();
-         const qtyRaw = parts[1]?.trim();
+      if (rows.length === 0) {
+        toast.error('CSV file is empty');
+        e.target.value = null;
+        return;
+      }
+
+      // Parse header to detect format
+      const headerParts = rows[0].split(',').map(h => h.trim().toUpperCase());
+      const skuIndex = headerParts.findIndex(h => h === 'SKU' || h === 'PRODUCT SKU' || h === 'PRODUCT_SKU');
+      const qtyIndex = headerParts.findIndex(h => h === 'QTY' || h === 'QUANTITY' || h === 'DEMAND QTY' || h === 'DEMANDQTY');
+      
+      // Determine if first row is header or data
+      const hasHeader = skuIndex >= 0 || headerParts.includes('SKU');
+      const startRow = hasHeader ? 1 : 0;
+      
+      // Default indices if no header found
+      const finalSkuIndex = skuIndex >= 0 ? skuIndex : 0;
+      const finalQtyIndex = qtyIndex >= 0 ? qtyIndex : 1;
+      
+      rows.slice(startRow).forEach((row) => {
+         const parts = row.split(',').map(p => p.trim());
+         const skuRaw = parts[finalSkuIndex];
+         const qtyRaw = parts[finalQtyIndex];
          
-         if (idx === 0 && skuRaw.toUpperCase() === 'SKU') return; // Skip header
+         if (!skuRaw) return;
          
          const sku = skuRaw.toUpperCase().trim();
          const qty = parseInt(qtyRaw) || 1;
-         if (!sku) return;
 
          const product = products.find(p => p.sku?.toUpperCase().trim() === sku);
          if (product) {
-           parsedLines.push({
-             product: product.id, productName: product.name, sku: product.sku, demandQty: qty, uom: product.uom || 'Units'
-           });
+           // Check if product already in lines
+           const existingIdx = parsedLines.findIndex(l => l.sku === product.sku);
+           if (existingIdx >= 0) {
+             parsedLines[existingIdx].demandQty += qty;
+           } else {
+             parsedLines.push({
+               product: product.id, 
+               productName: product.name, 
+               sku: product.sku, 
+               demandQty: qty, 
+               uom: product.uom || 'Units'
+             });
+           }
          } else {
            notFound.push(skuRaw);
          }
@@ -102,12 +130,13 @@ export default function StockMoveForm({ type, onClose, onSaved }) {
       
       if (parsedLines.length > 0) {
         setForm(f => ({ ...f, lines: [...f.lines, ...parsedLines] }));
-        toast.success(`Imported ${parsedLines.length} lines`);
+        toast.success(`Imported ${parsedLines.length} product lines`);
       } else {
         toast.error('No matching products found in CSV');
       }
       if (notFound.length > 0) {
-        toast.error(`SKUs not found: ${notFound.slice(0, 5).join(', ')}${notFound.length > 5 ? '...' : ''}`);
+        const uniqueNotFound = [...new Set(notFound)];
+        toast.error(`SKUs not found: ${uniqueNotFound.slice(0, 3).join(', ')}${uniqueNotFound.length > 3 ? ` and ${uniqueNotFound.length - 3} more` : ''}`);
       }
       
       // Reset input
@@ -117,6 +146,17 @@ export default function StockMoveForm({ type, onClose, onSaved }) {
   };
 
   const fileInputRef = useRef(null);
+
+  const downloadCSVTemplate = () => {
+    const csvContent = 'SKU,Qty\nSTL-ROD-10,50\nCEM-BAG-50,100\nPNT-WHT-5L,25\n';
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${type}_import_template.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
 
   const endpoints = {
     receipt: '/receipts',
@@ -263,8 +303,11 @@ export default function StockMoveForm({ type, onClose, onSaved }) {
                  />
                </div>
                <input type="file" accept=".csv" ref={fileInputRef} style={{ display: 'none' }} onChange={parseCSV} />
-               <button type="button" className="btn btn-secondary" onClick={() => fileInputRef.current?.click()} title="Required CSV format: SKU, Qty">
+               <button type="button" className="btn btn-secondary" onClick={() => fileInputRef.current?.click()} title="CSV format: SKU,Qty (with or without header)">
                  <Upload size={15} /> Import CSV
+               </button>
+               <button type="button" className="btn btn-secondary btn-sm" onClick={downloadCSVTemplate} title="Download CSV template">
+                 <Upload size={14} /> Template
                </button>
             </div>
 

@@ -18,6 +18,9 @@ const User = sequelize.define('User', {
   bio: { type: DataTypes.TEXT, allowNull: true, defaultValue: null },
   resetOtp: { type: DataTypes.STRING },
   resetOtpExpiry: { type: DataTypes.DATE },
+  verificationOtp: { type: DataTypes.STRING },
+  verificationOtpExpiry: { type: DataTypes.DATE },
+  isVerified: { type: DataTypes.BOOLEAN, defaultValue: false },
   isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
 }, {
   hooks: {
@@ -38,6 +41,8 @@ User.prototype.toJSON = function() {
   delete values.password;
   delete values.resetOtp;
   delete values.resetOtpExpiry;
+  delete values.verificationOtp;
+  delete values.verificationOtpExpiry;
   return values;
 };
 
