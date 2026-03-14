@@ -88,7 +88,7 @@ export default function MoveHistory() {
             ) : data.map(move => {
               const t = TYPE_ICONS[move.type] || { icon: '📋', color: 'var(--text-muted)' };
               return (
-                <tr key={move._id}>
+                <tr key={move.id}>
                   <td>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: t.color, fontWeight: 600 }}>
                       {t.icon} {move.type}

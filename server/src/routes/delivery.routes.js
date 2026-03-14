@@ -1,31 +1,39 @@
 const express = require('express');
 const router = express.Router();
-const StockMove = require('../models/StockMove');
+const { StockMove, StockMoveLine, Warehouse, Product } = require('../models');
 const { protect } = require('../middleware/auth');
 const { updateStock } = require('../helpers/stockHelper');
+const { Op } = require('sequelize');
 
 const generateRef = async () => {
-  const count = await StockMove.countDocuments({ type: 'delivery' });
+  const count = await StockMove.count({ where: { type: 'delivery' } });
   return `WH/OUT/${String(count + 1).padStart(4, '0')}`;
 };
 
 router.get('/', protect, async (req, res) => {
   try {
     const { status, search, page = 1, limit = 20 } = req.query;
-    const filter = { type: 'delivery' };
-    if (status) filter.status = status;
-    if (search) filter.$or = [
-      { reference: { $regex: search, $options: 'i' } },
-      { partner: { $regex: search, $options: 'i' } }
-    ];
-    const moves = await StockMove.find(filter)
-      .populate('fromWarehouse', 'name code')
-      .populate('lines.product', 'name sku')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
-    const total = await StockMove.countDocuments(filter);
-    res.json({ success: true, data: moves, total });
+    const where = { type: 'delivery' };
+    if (status) where.status = status;
+    if (search) {
+      where[Op.or] = [
+        { reference: { [Op.iLike]: `%${search}%` } },
+        { partner: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+    const limitNum = Number(limit);
+    const offset = (Number(page) - 1) * limitNum;
+
+    const { count, rows } = await StockMove.findAndCountAll({
+      where,
+      include: [
+        { model: Warehouse, as: 'fromWarehouse', attributes: ['id', 'name', 'code'] },
+        { model: StockMoveLine, as: 'lines', include: [{ model: Product, as: 'product', attributes: ['name', 'sku'] }] }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: limitNum, offset
+    });
+    res.json({ success: true, data: rows, total: count });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -33,9 +41,12 @@ router.get('/', protect, async (req, res) => {
 
 router.get('/:id', protect, async (req, res) => {
   try {
-    const move = await StockMove.findById(req.params.id)
-      .populate('fromWarehouse', 'name code locations')
-      .populate('lines.product', 'name sku uom stockLevels');
+    const move = await StockMove.findByPk(req.params.id, {
+      include: [
+        { model: Warehouse, as: 'fromWarehouse', attributes: ['id', 'name', 'code'] },
+        { model: StockMoveLine, as: 'lines', include: [{ model: Product, as: 'product', attributes: ['name', 'sku'] }] }
+      ]
+    });
     if (!move || move.type !== 'delivery') return res.status(404).json({ success: false, message: 'Delivery not found.' });
     res.json({ success: true, data: move });
   } catch (err) {
@@ -46,23 +57,20 @@ router.get('/:id', protect, async (req, res) => {
 router.post('/', protect, async (req, res) => {
   try {
     const ref = await generateRef();
+    const { lines, fromWarehouse, fromLocation, partner, scheduledDate, notes } = req.body;
     const move = await StockMove.create({
-      ...req.body,
-      reference: ref,
-      type: 'delivery',
-      status: 'draft',
-      createdBy: req.user._id
+      reference: ref, type: 'delivery', status: 'draft',
+      partner, fromWarehouseId: fromWarehouse || null, fromLocation,
+      scheduledDate, notes, createdById: req.user.id
     });
-    res.status(201).json({ success: true, data: move });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
 
-router.put('/:id', protect, async (req, res) => {
-  try {
-    const move = await StockMove.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json({ success: true, data: move });
+    if (lines && lines.length > 0) {
+      await Promise.all(lines.map(l => StockMoveLine.create({
+        StockMoveId: move.id, ProductId: l.product || null,
+        productName: l.productName, sku: l.sku, demandQty: l.demandQty, uom: l.uom
+      })));
+    }
+    res.status(201).json({ success: true, data: move });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -70,16 +78,19 @@ router.put('/:id', protect, async (req, res) => {
 
 router.post('/:id/validate', protect, async (req, res) => {
   try {
-    const move = await StockMove.findById(req.params.id);
-    if (!move || move.type !== 'delivery') return res.status(404).json({ success: false, message: 'Delivery not found.' });
+    const move = await StockMove.findByPk(req.params.id, { include: [{ model: StockMoveLine, as: 'lines' }] });
+    if (!move || move.type !== 'delivery') return res.status(404).json({ success: false, message: 'Not found.' });
     if (move.status === 'done') return res.status(400).json({ success: false, message: 'Already validated.' });
     move.status = 'done';
     move.validatedDate = new Date();
-    move.validatedBy = req.user._id;
-    move.lines.forEach(l => { if (!l.doneQty) l.doneQty = l.demandQty; });
+    move.validatedById = req.user.id;
     await move.save();
+
+    await Promise.all(move.lines.map(async l => {
+      if (!l.doneQty) { l.doneQty = l.demandQty; await l.save(); }
+    }));
     await updateStock(move.lines, 'delivery', move);
-    res.json({ success: true, data: move, message: 'Delivery validated. Stock updated.' });
+    res.json({ success: true, data: move, message: 'Validated.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -87,7 +98,10 @@ router.post('/:id/validate', protect, async (req, res) => {
 
 router.post('/:id/cancel', protect, async (req, res) => {
   try {
-    const move = await StockMove.findByIdAndUpdate(req.params.id, { status: 'cancelled' }, { new: true });
+    const move = await StockMove.findByPk(req.params.id);
+    if (!move) return res.status(404).json({ success: false, message: 'Not found' });
+    move.status = 'cancelled';
+    await move.save();
     res.json({ success: true, data: move });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

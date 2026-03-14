@@ -34,9 +34,9 @@ export default function Dashboard() {
   // Build chart data for last 7 days
   const chartMap = {};
   recentMoves.forEach(m => {
-    const d = m._id.date;
+    const d = m.id.date;
     if (!chartMap[d]) chartMap[d] = { date: d, receipt: 0, delivery: 0, transfer: 0, adjustment: 0 };
-    chartMap[d][m._id.type] = m.count;
+    chartMap[d][m.id.type] = m.count;
   });
   const chartData = Object.values(chartMap).sort((a, b) => a.date.localeCompare(b.date));
 

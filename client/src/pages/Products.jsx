@@ -45,7 +45,7 @@ export default function Products() {
     e.preventDefault();
     try {
       if (editProduct) {
-        await api.put(`/products/${editProduct._id}`, form);
+        await api.put(`/products/${editProduct.id}`, form);
         toast.success('Product updated');
       } else {
         await api.post('/products', form);
@@ -60,7 +60,7 @@ export default function Products() {
   };
 
   const handleEdit = (p) => {
-    setForm({ name: p.name, sku: p.sku, description: p.description || '', category: p.category?._id || '', uom: p.uom, costPrice: p.costPrice, salePrice: p.salePrice, minStockLevel: p.minStockLevel, reorderQty: p.reorderQty, initialStock: 0, warehouseId: '', locationName: 'Main Stock' });
+    setForm({ name: p.name, sku: p.sku, description: p.description || '', category: p.category?.id || '', uom: p.uom, costPrice: p.costPrice, salePrice: p.salePrice, minStockLevel: p.minStockLevel, reorderQty: p.reorderQty, initialStock: 0, warehouseId: '', locationName: 'Main Stock' });
     setEditProduct(p); setShowForm(true);
   };
 
@@ -101,7 +101,7 @@ export default function Products() {
         </div>
         <select className="form-control" style={{ width: 180 }} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
           <option value="">All Categories</option>
-          {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+          {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
 
@@ -135,7 +135,7 @@ export default function Products() {
               const isLow = total > 0 && total <= p.minStockLevel;
               const isOut = total === 0;
               return (
-                <tr key={p._id}>
+                <tr key={p.id}>
                   <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>📦</div>
@@ -155,7 +155,7 @@ export default function Products() {
                   <td>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button className="btn-icon" onClick={() => handleEdit(p)} title="Edit"><Edit2 size={14} /></button>
-                      <button className="btn-icon" onClick={() => handleDelete(p._id)} title="Archive" style={{ color: 'var(--danger)' }}><Trash2 size={14} /></button>
+                      <button className="btn-icon" onClick={() => handleDelete(p.id)} title="Archive" style={{ color: 'var(--danger)' }}><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>
@@ -188,7 +188,7 @@ export default function Products() {
                     <label className="form-label">Category</label>
                     <select className="form-control" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
                       <option value="">Select category</option>
-                      {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                      {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
@@ -230,7 +230,7 @@ export default function Products() {
                         <label className="form-label">Warehouse</label>
                         <select className="form-control" value={form.warehouseId} onChange={e => setForm(f => ({ ...f, warehouseId: e.target.value }))}>
                           <option value="">Select</option>
-                          {warehouses.map(w => <option key={w._id} value={w._id}>{w.name}</option>)}
+                          {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                         </select>
                       </div>
                       <div className="form-group">

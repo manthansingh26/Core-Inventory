@@ -1,35 +1,47 @@
 const express = require('express');
 const router = express.Router();
-const Product = require('../models/Product');
-const Category = require('../models/Category');
+const { Product, ProductStock, Category } = require('../models');
 const { protect } = require('../middleware/auth');
+const { Op } = require('sequelize');
 
 // GET /api/products - list all products
 router.get('/', protect, async (req, res) => {
   try {
     const { search, category, lowStock, page = 1, limit = 50 } = req.query;
-    const filter = { isActive: true };
-    if (search) filter.$or = [
-      { name: { $regex: search, $options: 'i' } },
-      { sku: { $regex: search, $options: 'i' } }
-    ];
-    if (category) filter.category = category;
+    const where = { isActive: true };
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { sku: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+    if (category) where.categoryId = category;
 
-    const products = await Product.find(filter)
-      .populate('category', 'name')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    const limitNum = Number(limit);
+    const offset = (Number(page) - 1) * limitNum;
 
-    const total = await Product.countDocuments(filter);
+    const { count, rows } = await Product.findAndCountAll({
+      where,
+      include: [
+        { model: Category, as: 'category', attributes: ['name'] },
+        { model: ProductStock, as: 'stockLevels' }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: limitNum,
+      offset
+    });
 
-    // Apply lowStock filter after fetching (uses virtual)
-    let result = products.map(p => p.toJSON());
+    let result = rows.map(p => {
+      const pData = p.toJSON();
+      pData.totalStock = pData.stockLevels.reduce((sum, s) => sum + s.quantity, 0);
+      return pData;
+    });
+
     if (lowStock === 'true') {
       result = result.filter(p => p.totalStock <= p.minStockLevel);
     }
 
-    res.json({ success: true, data: result, total });
+    res.json({ success: true, data: result, total: count });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -38,7 +50,12 @@ router.get('/', protect, async (req, res) => {
 // GET /api/products/:id
 router.get('/:id', protect, async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate('category', 'name');
+    const product = await Product.findByPk(req.params.id, {
+      include: [
+        { model: Category, as: 'category', attributes: ['name'] },
+        { model: ProductStock, as: 'stockLevels' }
+      ]
+    });
     if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
     res.json({ success: true, data: product });
   } catch (err) {
@@ -50,12 +67,27 @@ router.get('/:id', protect, async (req, res) => {
 router.post('/', protect, async (req, res) => {
   try {
     const { name, sku, description, category, uom, costPrice, salePrice, minStockLevel, reorderQty, initialStock, warehouseId, locationName } = req.body;
-    const product = new Product({ name, sku, description, category, uom, costPrice, salePrice, minStockLevel, reorderQty });
+    
+    // Set categoryId appropriately
+    const productData = { name, sku, description, uom, costPrice, salePrice, minStockLevel, reorderQty };
+    if (category) productData.categoryId = category;
+
+    const product = await Product.create(productData);
+
     if (initialStock && initialStock > 0 && warehouseId) {
-      product.stockLevels.push({ warehouse: warehouseId, locationName: locationName || 'Main Stock', quantity: initialStock });
+      await ProductStock.create({
+        locationName: locationName || 'Main Stock',
+        quantity: initialStock,
+        ProductId: product.id,
+        WarehouseId: warehouseId
+      });
     }
-    await product.save();
-    res.status(201).json({ success: true, data: product });
+
+    const newProduct = await Product.findByPk(product.id, {
+      include: [{ model: ProductStock, as: 'stockLevels' }]
+    });
+
+    res.status(201).json({ success: true, data: newProduct });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -64,8 +96,13 @@ router.post('/', protect, async (req, res) => {
 // PUT /api/products/:id
 router.put('/:id', protect, async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const product = await Product.findByPk(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+    
+    const { category, ...data } = req.body;
+    if (category !== undefined) data.categoryId = category || null;
+
+    await product.update(data);
     res.json({ success: true, data: product });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -75,7 +112,9 @@ router.put('/:id', protect, async (req, res) => {
 // DELETE /api/products/:id (soft delete)
 router.delete('/:id', protect, async (req, res) => {
   try {
-    await Product.findByIdAndUpdate(req.params.id, { isActive: false });
+    const product = await Product.findByPk(req.params.id);
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
+    await product.update({ isActive: false });
     res.json({ success: true, message: 'Product archived.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -83,17 +122,15 @@ router.delete('/:id', protect, async (req, res) => {
 });
 
 // --- Categories ---
-// GET /api/products/categories/all
 router.get('/categories/all', protect, async (req, res) => {
   try {
-    const categories = await Category.find().sort({ name: 1 });
+    const categories = await Category.findAll({ order: [['name', 'ASC']] });
     res.json({ success: true, data: categories });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// POST /api/products/categories
 router.post('/categories/create', protect, async (req, res) => {
   try {
     const cat = await Category.create(req.body);

@@ -1,84 +1,78 @@
 const express = require('express');
 const router = express.Router();
-const StockMove = require('../models/StockMove');
-const Product = require('../models/Product');
+const { StockMove, Product, sequelize } = require('../models');
 const { protect } = require('../middleware/auth');
+const { Op } = require('sequelize');
 
 router.get('/', protect, async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Counts
     const [
       pendingReceipts,
       pendingDeliveries,
       pendingTransfers,
       totalProducts,
-      doneToday
+      doneToday,
+      lateReceipts,
+      lateDeliveries
     ] = await Promise.all([
-      StockMove.countDocuments({ type: 'receipt', status: { $in: ['draft', 'waiting', 'ready'] } }),
-      StockMove.countDocuments({ type: 'delivery', status: { $in: ['draft', 'waiting', 'ready'] } }),
-      StockMove.countDocuments({ type: 'transfer', status: { $in: ['draft', 'waiting', 'ready'] } }),
-      Product.countDocuments({ isActive: true }),
-      StockMove.countDocuments({ status: 'done', validatedDate: { $gte: today } })
+      StockMove.count({ where: { type: 'receipt', status: { [Op.in]: ['draft', 'waiting', 'ready'] } } }),
+      StockMove.count({ where: { type: 'delivery', status: { [Op.in]: ['draft', 'waiting', 'ready'] } } }),
+      StockMove.count({ where: { type: 'transfer', status: { [Op.in]: ['draft', 'waiting', 'ready'] } } }),
+      Product.count({ where: { isActive: true } }),
+      StockMove.count({ where: { status: 'done', validatedDate: { [Op.gte]: today } } }),
+      StockMove.count({ where: { type: 'receipt', status: { [Op.notIn]: ['done', 'cancelled'] }, scheduledDate: { [Op.lt]: today } } }),
+      StockMove.count({ where: { type: 'delivery', status: { [Op.notIn]: ['done', 'cancelled'] }, scheduledDate: { [Op.lt]: today } } })
     ]);
 
     // Low stock products
-    const allProducts = await Product.find({ isActive: true });
+    const allProducts = await Product.findAll({ 
+      where: { isActive: true },
+      include: ['stockLevels'] 
+    });
+    
     const lowStockCount = allProducts.filter(p => {
-      const total = p.stockLevels.reduce((s, l) => s + l.quantity, 0);
-      return total <= p.minStockLevel;
+      const total = p.stockLevels?.reduce((s, l) => s + l.quantity, 0) || 0;
+      return total <= p.minStockLevel && total > 0;
     }).length;
+    
     const outOfStockCount = allProducts.filter(p => {
-      const total = p.stockLevels.reduce((s, l) => s + l.quantity, 0);
-      return total === 0;
+      const total = p.stockLevels?.reduce((s, l) => s + l.quantity, 0) || 0;
+      return total <= 0;
     }).length;
-
-    // Late receipts (scheduled date < today, not done)
-    const lateReceipts = await StockMove.countDocuments({
-      type: 'receipt',
-      status: { $nin: ['done', 'cancelled'] },
-      scheduledDate: { $lt: today }
-    });
-    const lateDeliveries = await StockMove.countDocuments({
-      type: 'delivery',
-      status: { $nin: ['done', 'cancelled'] },
-      scheduledDate: { $lt: today }
-    });
 
     // Recent moves (last 7 days chart data)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    const recentMoves = await StockMove.aggregate([
-      { $match: { status: 'done', validatedDate: { $gte: sevenDaysAgo } } },
-      {
-        $group: {
-          _id: {
-            date: { $dateToString: { format: '%Y-%m-%d', date: '$validatedDate' } },
-            type: '$type'
-          },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { '_id.date': 1 } }
-    ]);
+    // Using raw query for grouping by date in postgres
+    const recentMovesRaw = await StockMove.findAll({
+      where: { status: 'done', validatedDate: { [Op.gte]: sevenDaysAgo } },
+      attributes: [
+        [sequelize.fn('date', sequelize.col('validatedDate')), 'date'],
+        'type',
+        [sequelize.fn('count', sequelize.col('id')), 'count']
+      ],
+      group: [sequelize.fn('date', sequelize.col('validatedDate')), 'type'],
+      order: [[sequelize.fn('date', sequelize.col('validatedDate')), 'ASC']],
+      raw: true
+    });
+
+    const recentMoves = recentMovesRaw.map(m => ({
+      _id: { date: m.date, type: m.type },
+      count: Number(m.count)
+    }));
 
     res.json({
       success: true,
       data: {
         kpis: {
-          totalProducts,
-          lowStockCount,
-          outOfStockCount,
-          pendingReceipts,
-          pendingDeliveries,
-          pendingTransfers,
-          lateReceipts,
-          lateDeliveries,
-          doneToday
+          totalProducts, lowStockCount, outOfStockCount,
+          pendingReceipts, pendingDeliveries, pendingTransfers,
+          lateReceipts, lateDeliveries, doneToday
         },
         recentMoves
       }

@@ -19,7 +19,7 @@ export default function Settings() {
     e.preventDefault();
     try {
       if (editWH) {
-        await api.put(`/warehouses/${editWH._id}`, form);
+        await api.put(`/warehouses/${editWH.id}`, form);
         toast.success('Warehouse updated');
       } else {
         await api.post('/warehouses', form);
@@ -60,7 +60,7 @@ export default function Settings() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
             {warehouses.map(w => (
-              <div key={w._id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px' }}>
+              <div key={w.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px' }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{w.name}</div>
@@ -69,7 +69,7 @@ export default function Settings() {
                   </div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     <button className="btn-icon" onClick={() => { setEditWH(w); setForm({ name: w.name, code: w.code, address: w.address || '' }); setShowForm(true); }}><Edit2 size={14} /></button>
-                    <button className="btn-icon" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(w._id)}><Trash2 size={14} /></button>
+                    <button className="btn-icon" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(w.id)}><Trash2 size={14} /></button>
                   </div>
                 </div>
               </div>

@@ -36,7 +36,7 @@ export default function StockMoveForm({ type, onClose, onSaved }) {
       const lines = [...f.lines];
       lines[i] = { ...lines[i], [field]: value };
       if (field === 'product') {
-        const p = products.find(p => p._id === value);
+        const p = products.find(p => p.id === value);
         if (p) { lines[i].productName = p.name; lines[i].sku = p.sku; lines[i].uom = p.uom || 'Units'; }
       }
       return { ...f, lines };
@@ -100,7 +100,7 @@ export default function StockMoveForm({ type, onClose, onSaved }) {
                   <label className="form-label">{lbl.from}</label>
                   <select className="form-control" value={form.fromWarehouse} onChange={e => setForm(f => ({ ...f, fromWarehouse: e.target.value }))} required={lbl.showBoth}>
                     <option value="">Select warehouse</option>
-                    {warehouses.map(w => <option key={w._id} value={w._id}>{w.name}</option>)}
+                    {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                   </select>
                 </div>
               )}
@@ -112,7 +112,7 @@ export default function StockMoveForm({ type, onClose, onSaved }) {
                   ) : (
                     <select className="form-control" value={form.toWarehouse} onChange={e => setForm(f => ({ ...f, toWarehouse: e.target.value }))} required>
                       <option value="">Select warehouse</option>
-                      {warehouses.map(w => <option key={w._id} value={w._id}>{w.name}</option>)}
+                      {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                     </select>
                   )}
                 </div>
@@ -172,7 +172,7 @@ export default function StockMoveForm({ type, onClose, onSaved }) {
                       <label className="form-label" style={{ display: i === 0 ? undefined : 'none' }}>Product</label>
                       <select className="form-control" value={line.product} onChange={e => updateLine(i, 'product', e.target.value)} required>
                         <option value="">Select product</option>
-                        {products.map(p => <option key={p._id} value={p._id}>{p.name} ({p.sku})</option>)}
+                        {products.map(p => <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>)}
                       </select>
                     </div>
                     <div className="form-group" style={{ margin: 0 }}>

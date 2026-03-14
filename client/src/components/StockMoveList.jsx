@@ -115,7 +115,7 @@ export default function StockMoveList({
                 </div>
               </td></tr>
             ) : data.map(move => (
-              <tr key={move._id} onClick={() => navigate(`${basePath}/${move._id}`)} style={{ cursor: 'pointer' }}>
+              <tr key={move.id} onClick={() => navigate(`${basePath}/${move.id}`)} style={{ cursor: 'pointer' }}>
                 {renderRow(move).map((cell, i) => (
                   <td key={i}>{cell}</td>
                 ))}
