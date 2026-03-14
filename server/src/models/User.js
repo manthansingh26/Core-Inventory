@@ -9,6 +9,7 @@ const User = sequelize.define('User', {
   password: { type: DataTypes.STRING, allowNull: false },
   role: { type: DataTypes.ENUM('admin', 'manager', 'staff'), defaultValue: 'staff' },
   avatar: { type: DataTypes.STRING, defaultValue: '' },
+  profilePicture: { type: DataTypes.STRING, allowNull: true, defaultValue: null },
   resetOtp: { type: DataTypes.STRING },
   resetOtpExpiry: { type: DataTypes.DATE },
   isActive: { type: DataTypes.BOOLEAN, defaultValue: true }
