@@ -12,6 +12,7 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [stockFilter, setStockFilter] = useState(''); // '', 'out', 'low', 'in'
   const [showForm, setShowForm] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [showCatForm, setShowCatForm] = useState(false);
@@ -35,11 +36,27 @@ export default function Products() {
       api.get('/products/categories/all'),
       api.get('/warehouses')
     ]).then(([p, c, w]) => {
-      setProducts(p.data.data); setTotal(p.data.total);
-      setCategories(c.data.data); setWarehouses(w.data.data);
+      let filteredProducts = p.data.data;
+      
+      // Apply stock filter
+      if (stockFilter) {
+        filteredProducts = filteredProducts.filter(product => {
+          const total = product.totalStock ?? product.stockLevels?.reduce((s, l) => s + l.quantity, 0) ?? 0;
+          
+          if (stockFilter === 'out') return total === 0;
+          if (stockFilter === 'low') return total > 0 && total <= product.minStockLevel;
+          if (stockFilter === 'in') return total > product.minStockLevel;
+          return true;
+        });
+      }
+      
+      setProducts(filteredProducts);
+      setTotal(filteredProducts.length);
+      setCategories(c.data.data);
+      setWarehouses(w.data.data);
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, [search, categoryFilter]);
+  }, [search, categoryFilter, stockFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -85,7 +102,12 @@ export default function Products() {
       <div className="page-header">
         <div className="page-header-left">
           <h2>Products</h2>
-          <p>Manage inventory items · {total} total</p>
+          <p>
+            Manage inventory items · {total} total
+            {stockFilter === 'out' && ` · ${total} out of stock`}
+            {stockFilter === 'low' && ` · ${total} low stock`}
+            {stockFilter === 'in' && ` · ${total} in stock`}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button 
@@ -116,6 +138,49 @@ export default function Products() {
           <option value="">All Categories</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
+        
+        {/* Stock Status Filter */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button 
+            className={`filter-chip ${stockFilter === '' ? 'active' : ''}`}
+            onClick={() => setStockFilter('')}
+          >
+            All Stock
+          </button>
+          <button 
+            className={`filter-chip ${stockFilter === 'out' ? 'active' : ''}`}
+            onClick={() => setStockFilter('out')}
+            style={{ 
+              background: stockFilter === 'out' ? 'var(--danger)' : 'var(--background)',
+              color: stockFilter === 'out' ? 'white' : 'var(--text-secondary)',
+              borderColor: stockFilter === 'out' ? 'var(--danger)' : 'var(--border)'
+            }}
+          >
+            <AlertTriangle size={12} /> Out of Stock
+          </button>
+          <button 
+            className={`filter-chip ${stockFilter === 'low' ? 'active' : ''}`}
+            onClick={() => setStockFilter('low')}
+            style={{ 
+              background: stockFilter === 'low' ? 'var(--warning)' : 'var(--background)',
+              color: stockFilter === 'low' ? 'white' : 'var(--text-secondary)',
+              borderColor: stockFilter === 'low' ? 'var(--warning)' : 'var(--border)'
+            }}
+          >
+            <AlertTriangle size={12} /> Low Stock
+          </button>
+          <button 
+            className={`filter-chip ${stockFilter === 'in' ? 'active' : ''}`}
+            onClick={() => setStockFilter('in')}
+            style={{ 
+              background: stockFilter === 'in' ? 'var(--success)' : 'var(--background)',
+              color: stockFilter === 'in' ? 'white' : 'var(--text-secondary)',
+              borderColor: stockFilter === 'in' ? 'var(--success)' : 'var(--border)'
+            }}
+          >
+            In Stock
+          </button>
+        </div>
       </div>
 
       <div className="table-container">
