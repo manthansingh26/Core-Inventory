@@ -1,4 +1,4 @@
-# 🏢 CoreInventory - Smart Inventory Management System
+# CoreInventory - Smart Inventory Management System
 
 **🎯 Odoo X indus University Hackathon Project**
 
