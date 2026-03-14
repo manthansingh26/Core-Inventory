@@ -1,6 +1,6 @@
 # 🏢 CoreInventory - Smart Inventory Management System
 
-**🎯 Odoo X indus University Hackathon Project**
+**🎯 Odoo X Indus University Hackathon Project**
 
 > A comprehensive inventory management solution with role-based access control, real-time stock tracking, and advanced profile management.
 
@@ -106,15 +106,6 @@ State              Authentication           Security
 
 ---
 
-## 👥 Developer
-
-**👤 Manthan Singh**  
-**🎓 Odoo Xindus University**  
-**📧 [Your Email]  
-**🔗 [GitHub Profile]**
-
----
-
 ## � Future Enhancements
 
 - � Mobile app for warehouse staff
@@ -136,10 +127,8 @@ State              Authentication           Security
 
 <div align="center">
 
-## 🎉 Built for Odoo X indus University Hackathon
+## 🎉 Built for Odoo X Indus University Hackathon
 
 *"Innovation in inventory management for smarter business operations"*
-
-[⭐ Star] | [🍴 Fork] | [🐛 Issues] | [💡 Features]
 
 </div>
