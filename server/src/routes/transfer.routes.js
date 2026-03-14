@@ -103,4 +103,20 @@ router.post('/:id/cancel', protect, async (req, res) => {
   }
 });
 
+router.put('/:id/status', protect, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const move = await StockMove.findByPk(req.params.id);
+    if (!move) return res.status(404).json({ success: false, message: 'Not found' });
+    if (move.status === 'done' || status === 'done') {
+      return res.status(400).json({ success: false, message: 'Cannot set to done directly. Use validate.' });
+    }
+    move.status = status;
+    await move.save();
+    res.json({ success: true, data: move });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

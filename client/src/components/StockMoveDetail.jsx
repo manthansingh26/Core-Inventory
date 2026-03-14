@@ -54,11 +54,29 @@ export default function StockMoveDetail({ id, type }) {
     }
   };
 
+  const updateStatus = async (newStatus) => {
+    if (newStatus === move.status) return;
+    if (newStatus === 'done') return validate();
+    if (newStatus === 'cancelled') return cancel();
+    
+    if (move.status === 'done') {
+       if (!window.confirm('Warning: Reverting from "done" will not automatically reverse stock. Proceed?')) return;
+    }
+
+    try {
+      await api.put(`${cfg.endpoint}/${id}/status`, { status: newStatus });
+      toast.success(`Status set to ${newStatus}`);
+      fetchMove();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Update failed');
+    }
+  };
+
   if (loading) return <div className="loading-spinner"><div className="spinner" /></div>;
   if (!move) return <div className="empty-state"><h3>Not found</h3></div>;
 
-  const canValidate = !['done', 'cancelled'].includes(move.status);
   const totalQty = move.lines?.reduce((s, l) => s + (l.demandQty || 0), 0) || 0;
+  const statuses = ['draft', 'waiting', 'ready', 'done', 'cancelled'];
 
   return (
     <div>
@@ -73,22 +91,19 @@ export default function StockMoveDetail({ id, type }) {
           <div>
             <div className="detail-ref" style={{ color: cfg.color }}>{cfg.icon} {cfg.label}</div>
             <div className="detail-title">{move.reference}</div>
-            <div style={{ marginTop: 8 }}>
-              <span className={`badge ${STATUS_COLORS[move.status]}`} style={{ fontSize: 13 }}>{move.status}</span>
-            </div>
           </div>
-          <div className="detail-actions">
-            {canValidate && (
-              <button className="btn btn-success" onClick={validate} disabled={validating} id="validate-btn">
-                {validating ? <span className="spinner" style={{ width: 16, height: 16 }} /> : <CheckCircle2 size={16} />}
-                Validate
+          <div className="detail-actions" style={{ flexWrap: 'wrap' }}>
+            {statuses.map(s => (
+              <button
+                key={s}
+                onClick={() => updateStatus(s)}
+                disabled={validating}
+                className={`btn btn-sm ${move.status === s ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ textTransform: 'capitalize' }}
+              >
+                {s === 'done' && validating ? <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> : s}
               </button>
-            )}
-            {canValidate && (
-              <button className="btn btn-danger" onClick={cancel} id="cancel-btn">
-                <XCircle size={16} /> Cancel
-              </button>
-            )}
+            ))}
           </div>
         </div>
 
