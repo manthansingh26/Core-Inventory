@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { Product, Category, Warehouse, ProductStock } = require('./src/models');
 const sequelize = require('./src/config/database');
 
