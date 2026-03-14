@@ -10,6 +10,12 @@ const User = sequelize.define('User', {
   role: { type: DataTypes.ENUM('admin', 'manager', 'staff'), defaultValue: 'staff' },
   avatar: { type: DataTypes.STRING, defaultValue: '' },
   profilePicture: { type: DataTypes.STRING, allowNull: true, defaultValue: null },
+  phoneNumber: { type: DataTypes.STRING, allowNull: true, defaultValue: null },
+  dateOfBirth: { type: DataTypes.DATEONLY, allowNull: true, defaultValue: null },
+  address: { type: DataTypes.TEXT, allowNull: true, defaultValue: null },
+  department: { type: DataTypes.STRING, allowNull: true, defaultValue: null },
+  jobTitle: { type: DataTypes.STRING, allowNull: true, defaultValue: null },
+  bio: { type: DataTypes.TEXT, allowNull: true, defaultValue: null },
   resetOtp: { type: DataTypes.STRING },
   resetOtpExpiry: { type: DataTypes.DATE },
   isActive: { type: DataTypes.BOOLEAN, defaultValue: true }

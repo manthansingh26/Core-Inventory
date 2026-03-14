@@ -8,7 +8,14 @@
     "install:server": "cd server && npm install",
     "install:client": "cd client && npm install"
   },
-  "keywords": ["inventory", "management", "warehouse"],
+  "keywords": [
+    "inventory",
+    "management",
+    "warehouse"
+  ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^3.0.3"
+  }
 }

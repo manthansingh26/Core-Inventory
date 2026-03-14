@@ -120,9 +120,27 @@ router.get('/me', protect, async (req, res) => {
 // PUT /api/auth/profile
 router.put('/profile', protect, async (req, res) => {
   try {
-    const { name, avatar } = req.body;
-    req.user.name = name;
-    if (avatar) req.user.avatar = avatar;
+    const { 
+      name, 
+      avatar, 
+      phoneNumber, 
+      dateOfBirth, 
+      address, 
+      department, 
+      jobTitle, 
+      bio 
+    } = req.body;
+    
+    // Update allowed fields
+    if (name !== undefined) req.user.name = name;
+    if (avatar !== undefined) req.user.avatar = avatar;
+    if (phoneNumber !== undefined) req.user.phoneNumber = phoneNumber;
+    if (dateOfBirth !== undefined) req.user.dateOfBirth = dateOfBirth;
+    if (address !== undefined) req.user.address = address;
+    if (department !== undefined) req.user.department = department;
+    if (jobTitle !== undefined) req.user.jobTitle = jobTitle;
+    if (bio !== undefined) req.user.bio = bio;
+    
     await req.user.save();
     res.json({ success: true, user: req.user.toJSON() });
   } catch (err) {

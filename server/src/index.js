@@ -14,9 +14,13 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files
+app.use('/uploads', express.static('uploads'));
+
 // Routes
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
+const uploadRoutes = require('./routes/upload.routes');
 const productRoutes = require('./routes/product.routes');
 const warehouseRoutes = require('./routes/warehouse.routes');
 const receiptRoutes = require('./routes/receipt.routes');
@@ -28,6 +32,7 @@ const historyRoutes = require('./routes/history.routes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/warehouses', warehouseRoutes);
 app.use('/api/receipts', receiptRoutes);

@@ -84,9 +84,23 @@ export default function Layout() {
 
         <div className="sidebar-footer">
           <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-            <div className="avatar" style={{ width: 28, height: 28, fontSize: 12 }}>
-              {user?.name?.charAt(0)?.toUpperCase()}
-            </div>
+            {user?.profilePicture ? (
+              <img 
+                src={`http://localhost:5000${user.profilePicture}`} 
+                alt="Profile" 
+                style={{ 
+                  width: 28, 
+                  height: 28, 
+                  borderRadius: '50%', 
+                  objectFit: 'cover',
+                  border: '2px solid var(--accent)'
+                }} 
+              />
+            ) : (
+              <div className="avatar" style={{ width: 28, height: 28, fontSize: 12 }}>
+                {user?.name?.charAt(0)?.toUpperCase()}
+              </div>
+            )}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</div>
               <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user?.role}</div>
