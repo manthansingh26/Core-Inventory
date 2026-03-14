@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { CheckCircle2, XCircle, ArrowLeft, Calendar, MapPin, User, Edit2 } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowLeft, Calendar, MapPin, User, Edit2, Printer, Camera } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
@@ -32,11 +32,11 @@ export default function StockMoveDetail({ id, type }) {
   useEffect(() => { fetchMove(); }, [id]);
 
   const validate = async () => {
-    if (!window.confirm('Validate this operation? Stock will be updated.')) return;
+    if (!window.confirm('Validate this operation? Stock will be updated. Document will be LOCKED.')) return;
     setValidating(true);
     try {
       await api.post(`${cfg.endpoint}/${id}/validate`);
-      toast.success('Validated! Stock updated.');
+      toast.success('Validated! Stock updated & locked.');
       fetchMove();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Validation failed');
@@ -60,7 +60,8 @@ export default function StockMoveDetail({ id, type }) {
     if (newStatus === 'cancelled') return cancel();
     
     if (move.status === 'done') {
-       if (!window.confirm('Warning: Reverting from "done" will not automatically reverse stock. Proceed?')) return;
+       toast.error('Document is locked after validation.');
+       return;
     }
 
     try {
@@ -77,6 +78,7 @@ export default function StockMoveDetail({ id, type }) {
 
   const totalQty = move.lines?.reduce((s, l) => s + (l.demandQty || 0), 0) || 0;
   const statuses = ['draft', 'waiting', 'ready', 'done', 'cancelled'];
+  const isLocked = move.status === 'done' || move.status === 'cancelled';
 
   return (
     <div>
@@ -89,11 +91,14 @@ export default function StockMoveDetail({ id, type }) {
       <div className="detail-header">
         <div className="detail-header-top">
           <div>
-            <div className="detail-ref" style={{ color: cfg.color }}>{cfg.icon} {cfg.label}</div>
+            <div className="detail-ref" style={{ color: cfg.color }}>{cfg.icon} {cfg.label} {isLocked ? '(LOCKED)' : ''}</div>
             <div className="detail-title">{move.reference}</div>
           </div>
           <div className="detail-actions" style={{ flexWrap: 'wrap' }}>
-            {statuses.map(s => (
+            <button className="btn btn-secondary btn-sm" onClick={() => window.print()} title="Print Count Sheet">
+              <Printer size={15} /> Print
+            </button>
+            {!isLocked && statuses.map(s => (
               <button
                 key={s}
                 onClick={() => updateStatus(s)}
@@ -104,6 +109,7 @@ export default function StockMoveDetail({ id, type }) {
                 {s === 'done' && validating ? <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> : s}
               </button>
             ))}
+            {isLocked && <span className={`badge ${STATUS_COLORS[move.status]}`} style={{ fontSize: 13, padding: '6px 14px' }}>{move.status}</span>}
           </div>
         </div>
 
@@ -163,23 +169,44 @@ export default function StockMoveDetail({ id, type }) {
                 <th>Product</th>
                 <th>SKU</th>
                 <th>UOM</th>
-                <th>Demand Qty</th>
-                <th>Done Qty</th>
+                <th>{type === 'adjustment' ? 'Expected Qty' : 'Demand Qty'}</th>
+                <th>{type === 'adjustment' ? 'Counted Qty' : 'Done Qty'}</th>
+                {type === 'adjustment' && <th>Variance</th>}
+                {type === 'adjustment' && <th>Cost Method</th>}
+                <th>Photo</th>
               </tr>
             </thead>
             <tbody>
-              {move.lines?.map((line, i) => (
-                <tr key={i}>
-                  <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
-                  <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{line.productName || line.product?.name || '—'}</td>
-                  <td><code style={{ background: 'var(--bg-elevated)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>{line.sku || line.product?.sku || '—'}</code></td>
-                  <td style={{ color: 'var(--text-muted)' }}>{line.uom}</td>
-                  <td style={{ fontWeight: 600 }}>{line.demandQty}</td>
-                  <td style={{ color: move.status === 'done' ? 'var(--success)' : 'var(--text-muted)', fontWeight: 600 }}>
-                    {move.status === 'done' ? (line.doneQty || line.demandQty) : '—'}
-                  </td>
-                </tr>
-              ))}
+              {move.lines?.map((line, i) => {
+                const doneAmount = typeof line.doneQty === 'number' ? line.doneQty : line.demandQty;
+                const variance = doneAmount - line.demandQty;
+                const isVariance = variance !== 0;
+
+                return (
+                  <tr key={i}>
+                    <td style={{ color: 'var(--text-muted)' }}>{i + 1}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{line.productName || line.product?.name || '—'}</td>
+                    <td><code style={{ background: 'var(--bg-elevated)', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>{line.sku || line.product?.sku || '—'}</code></td>
+                    <td style={{ color: 'var(--text-muted)' }}>{line.uom}</td>
+                    <td style={{ fontWeight: 600 }}>{line.demandQty}</td>
+                    <td style={{ color: move.status === 'done' ? 'var(--success)' : 'var(--text-muted)', fontWeight: 600 }}>
+                      {move.status === 'done' ? doneAmount : '—'}
+                    </td>
+                    {type === 'adjustment' && (
+                       <td style={{ fontWeight: 600, color: isVariance ? 'var(--danger)' : 'var(--text-muted)' }}>
+                         {move.status === 'done' ? (variance > 0 ? `+${variance}` : variance) : '-'}
+                         {isVariance && move.status === 'done' && <span style={{ marginLeft: 6, fontSize: 11, background: 'var(--danger-dim)', color: 'var(--danger)', padding: '2px 4px', borderRadius: 4 }}>Diff</span>}
+                       </td>
+                    )}
+                    {type === 'adjustment' && (
+                       <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>FIFO / AVG</td>
+                    )}
+                    <td>
+                      <button className="btn-icon" title="Attach Evidence/Photo"><Camera size={14} /></button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

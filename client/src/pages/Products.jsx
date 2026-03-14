@@ -87,7 +87,11 @@ export default function Products() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={() => setShowCatForm(true)}>+ Category</button>
-          <button id="new-product-btn" className="btn btn-primary" onClick={() => { setEditProduct(null); setShowForm(true); }}>
+          <button id="new-product-btn" className="btn btn-primary" onClick={() => { 
+            setEditProduct(null); 
+            setForm({ name: '', sku: '', description: '', category: '', uom: 'Units', costPrice: 0, salePrice: 0, minStockLevel: 0, reorderQty: 0, initialStock: 0, warehouseId: '', locationName: 'Main Stock' });
+            setShowForm(true); 
+          }}>
             <Plus size={15} /> New Product
           </button>
         </div>
