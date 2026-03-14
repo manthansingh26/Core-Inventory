@@ -4,7 +4,7 @@ import Layout from './components/Layout';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
-import Dashboard from './pages/Dashboard';
+import Dashboard from './pages/DashboardFixed';
 import Products from './pages/Products';
 import Receipts from './pages/Receipts';
 import ReceiptDetail from './pages/ReceiptDetail';

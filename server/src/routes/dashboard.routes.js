@@ -62,7 +62,7 @@ router.get('/', protect, async (req, res) => {
     });
 
     const recentMoves = recentMovesRaw.map(m => ({
-      _id: { date: m.date, type: m.type },
+      id: { date: m.date, type: m.type },
       count: Number(m.count)
     }));
 
