@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { StockMove, StockMoveLine, Warehouse, Product } = require('../models');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const { updateStock } = require('../helpers/stockHelper');
 const { Op } = require('sequelize');
 
@@ -60,7 +60,7 @@ router.get('/:id', protect, async (req, res) => {
 });
 
 // POST /api/receipts
-router.post('/', protect, async (req, res) => {
+router.post('/', protect, authorize('admin', 'manager'), async (req, res) => {
   try {
     const ref = await generateRef('WH/IN');
     const { lines, toWarehouse, toLocation, partner, scheduledDate, notes } = req.body;
@@ -97,7 +97,7 @@ router.post('/', protect, async (req, res) => {
 });
 
 // POST /api/receipts/:id/validate
-router.post('/:id/validate', protect, async (req, res) => {
+router.post('/:id/validate', protect, authorize('admin', 'manager', 'staff'), async (req, res) => {
   try {
     const move = await StockMove.findByPk(req.params.id, {
       include: [{ model: StockMoveLine, as: 'lines' }]
@@ -125,7 +125,7 @@ router.post('/:id/validate', protect, async (req, res) => {
 });
 
 // POST /api/receipts/:id/cancel
-router.post('/:id/cancel', protect, async (req, res) => {
+router.post('/:id/cancel', protect, authorize('admin', 'manager'), async (req, res) => {
   try {
     const move = await StockMove.findByPk(req.params.id);
     if (!move) return res.status(404).json({ success: false, message: 'Not found' });

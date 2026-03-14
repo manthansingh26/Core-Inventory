@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Warehouse, WarehouseLocation } = require('../models');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 
 router.get('/', protect, async (req, res) => {
   try {
@@ -28,7 +28,7 @@ router.get('/:id', protect, async (req, res) => {
   }
 });
 
-router.post('/', protect, async (req, res) => {
+router.post('/', protect, authorize('admin'), async (req, res) => {
   try {
     const warehouse = await Warehouse.create(req.body);
     // Optionally create a default location
@@ -44,7 +44,7 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
-router.put('/:id', protect, async (req, res) => {
+router.put('/:id', protect, authorize('admin', 'manager'), async (req, res) => {
   try {
     const warehouse = await Warehouse.findByPk(req.params.id);
     if (!warehouse) return res.status(404).json({ success: false, message: 'Warehouse not found.' });
@@ -55,7 +55,7 @@ router.put('/:id', protect, async (req, res) => {
   }
 });
 
-router.delete('/:id', protect, async (req, res) => {
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const warehouse = await Warehouse.findByPk(req.params.id);
     if (!warehouse) return res.status(404).json({ success: false, message: 'Warehouse not found.' });

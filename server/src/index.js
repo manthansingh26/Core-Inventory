@@ -16,6 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 const authRoutes = require('./routes/auth.routes');
+const userRoutes = require('./routes/user.routes');
 const productRoutes = require('./routes/product.routes');
 const warehouseRoutes = require('./routes/warehouse.routes');
 const receiptRoutes = require('./routes/receipt.routes');
@@ -26,6 +27,7 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const historyRoutes = require('./routes/history.routes');
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/warehouses', warehouseRoutes);
 app.use('/api/receipts', receiptRoutes);

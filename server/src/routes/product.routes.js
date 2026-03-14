@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Product, ProductStock, Category } = require('../models');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const { Op } = require('sequelize');
 
 // GET /api/products - list all products
@@ -64,7 +64,7 @@ router.get('/:id', protect, async (req, res) => {
 });
 
 // POST /api/products
-router.post('/', protect, async (req, res) => {
+router.post('/', protect, authorize('admin', 'manager'), async (req, res) => {
   try {
     const { name, sku, description, category, uom, costPrice, salePrice, minStockLevel, reorderQty, initialStock, warehouseId, locationName } = req.body;
     
@@ -94,7 +94,7 @@ router.post('/', protect, async (req, res) => {
 });
 
 // PUT /api/products/:id
-router.put('/:id', protect, async (req, res) => {
+router.put('/:id', protect, authorize('admin', 'manager'), async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
@@ -110,7 +110,7 @@ router.put('/:id', protect, async (req, res) => {
 });
 
 // DELETE /api/products/:id (soft delete)
-router.delete('/:id', protect, async (req, res) => {
+router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id);
     if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
@@ -131,7 +131,7 @@ router.get('/categories/all', protect, async (req, res) => {
   }
 });
 
-router.post('/categories/create', protect, async (req, res) => {
+router.post('/categories/create', protect, authorize('admin', 'manager'), async (req, res) => {
   try {
     const cat = await Category.create(req.body);
     res.status(201).json({ success: true, data: cat });
