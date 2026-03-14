@@ -1,0 +1,66 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+const app = express();
+
+// Middleware
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Routes
+const authRoutes = require('./routes/auth.routes');
+const productRoutes = require('./routes/product.routes');
+const warehouseRoutes = require('./routes/warehouse.routes');
+const receiptRoutes = require('./routes/receipt.routes');
+const deliveryRoutes = require('./routes/delivery.routes');
+const transferRoutes = require('./routes/transfer.routes');
+const adjustmentRoutes = require('./routes/adjustment.routes');
+const dashboardRoutes = require('./routes/dashboard.routes');
+const historyRoutes = require('./routes/history.routes');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/warehouses', warehouseRoutes);
+app.use('/api/receipts', receiptRoutes);
+app.use('/api/deliveries', deliveryRoutes);
+app.use('/api/transfers', transferRoutes);
+app.use('/api/adjustments', adjustmentRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/history', historyRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', message: 'CoreInventory API is running' });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error'
+  });
+});
+
+// Connect to MongoDB
+const PORT = process.env.PORT || 5000;
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log('✅ MongoDB connected successfully');
+    app.listen(PORT, () => {
+      console.log(`🚀 CoreInventory Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err.message);
+    process.exit(1);
+  });

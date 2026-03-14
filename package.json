@@ -1,0 +1,14 @@
+{
+  "name": "coreinventory",
+  "version": "1.0.0",
+  "description": "CoreInventory - Full-stack Inventory Management System",
+  "scripts": {
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "install:server": "cd server && npm install",
+    "install:client": "cd client && npm install"
+  },
+  "keywords": ["inventory", "management", "warehouse"],
+  "author": "",
+  "license": "ISC"
+}
